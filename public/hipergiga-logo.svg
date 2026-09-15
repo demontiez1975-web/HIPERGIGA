@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 140" role="img" aria-labelledby="title">
+<title>HIPERGIGA</title>
+<g fill="none" stroke="#075A5A" stroke-width="14" stroke-linecap="round" stroke-linejoin="round">
+<path d="M26 77 78 32l52 45v43H26z"/>
+</g>
+<rect x="55" y="74" width="19" height="19" rx="4" fill="#F45B3A"/>
+<rect x="82" y="74" width="19" height="19" rx="4" fill="#F45B3A"/>
+<rect x="55" y="100" width="19" height="19" rx="4" fill="#F45B3A"/>
+<rect x="82" y="100" width="19" height="19" rx="4" fill="#F45B3A"/>
+<path d="M133 22l8 19 19 8-19 8-8 19-8-19-19-8 19-8z" fill="#F45B3A"/>
+<rect x="114" y="12" width="10" height="28" rx="5" transform="rotate(-45 119 26)" fill="#F45B3A"/>
+<rect x="151" y="49" width="10" height="28" rx="5" transform="rotate(-45 156 63)" fill="#F45B3A"/>
+<text x="155" y="103" font-family="Poppins,Arial,sans-serif" font-size="72" font-weight="800" letter-spacing="-5">
+<tspan fill="#075A5A">HIPER</tspan><tspan fill="#F45B3A">GIGA</tspan>
+</text>
+</svg>
