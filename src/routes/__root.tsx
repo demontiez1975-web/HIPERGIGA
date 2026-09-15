@@ -11,6 +11,10 @@ export const Route = createRootRoute({
       { name: 'description', content: 'A gente pesquisa. Você escolhe melhor.' },
       { name: 'theme-color', content: '#075A5A' },
     ],
+    links: [
+      { rel: 'icon', href: '/favicon.svg' },
+      { rel: 'manifest', href: '/site.webmanifest' },
+    ],
   }),
   component: Root,
 })
@@ -20,11 +24,11 @@ function Root() {
 }
 
 function Header(){
-  return <header className="header"><div className="wrap nav"><a className="brand" href="/"><span>H</span>HIPERGIGA</a><nav><a href="/#categorias">Categorias</a><a href="/#achadinhos">Achadinhos</a><a href="/#dicas">Dicas</a><a href="/#sobre">Sobre</a></nav><a className="pill" href="/#achadinhos">Ver achadinhos</a></div></header>
+  return <header className="header header-pro"><div className="wrap nav nav-pro"><a className="brand brand-pro" href="/"><span>H</span><strong>HIPERGIGA</strong></a><nav><a href="/#categorias">Categorias</a><a href="/#achadinhos">Achadinhos</a><a href="/#dicas">Dicas</a><a href="/#sobre">Sobre</a></nav><a className="pill" href="/#achadinhos">Ver achadinhos</a></div></header>
 }
 
 function Footer(){
-  return <footer className="footer"><div className="wrap footer-grid"><div><div className="brand light"><span>H</span>HIPERGIGA</div><p>Curadoria de achadinhos e utilidades para o lar.</p></div><div><b>Explore</b><a href="/#categorias">Categorias</a><a href="/#achadinhos">Achadinhos</a></div><div><b>Transparência</b><p>Alguns links podem gerar comissão sem custo extra para você.</p></div></div></footer>
+  return <footer className="footer footer-pro"><div className="wrap footer-grid-pro"><div><div className="brand light brand-pro"><span>H</span><strong>HIPERGIGA</strong></div><p>Curadoria de achadinhos e utilidades para o lar.</p></div><div><b>Explore</b><a href="/#categorias">Categorias</a><a href="/#achadinhos">Achadinhos</a><a href="/#dicas">Dicas</a></div><div><b>Transparência</b><p>Alguns links podem gerar comissão sem custo extra para você.</p></div><div><b>Admin</b><a href="/auth">Acesso administrativo</a></div></div><div className="wrap footer-bottom">© 2026 HIPERGIGA. Curadoria simples, escolha melhor.</div></footer>
 }
 
 function Document({children}:{children:ReactNode}){
