@@ -24,13 +24,71 @@ function Root() {
 }
 
 function Header(){
-  return <header className="header header-pro"><div className="wrap nav nav-pro"><a className="brand brand-pro" href="/"><span>H</span><strong>HIPERGIGA</strong></a><nav><a href="/#categorias">Categorias</a><a href="/#achadinhos">Achadinhos</a><a href="/#dicas">Dicas</a><a href="/#sobre">Sobre</a></nav><a className="pill" href="/#achadinhos">Ver achadinhos</a></div></header>
+  return (
+    <header className="hg-header">
+      <div className="hg-wrap hg-nav">
+        <a className="hg-logo-link" href="/" aria-label="HIPERGIGA">
+          <img src="/hipergiga-logo.svg" alt="HIPERGIGA"/>
+        </a>
+
+        <nav className="hg-menu">
+          <a href="/#categorias">Categorias</a>
+          <a href="/#achadinhos">Achadinhos</a>
+          <a href="/#dicas">Dicas</a>
+          <a href="/#sobre">Sobre</a>
+        </nav>
+
+        <div className="hg-header-actions">
+          <div className="hg-search">
+            <span>⌕</span>
+            <input aria-label="Buscar" placeholder="O que você procura para o seu lar?"/>
+          </div>
+          <a className="hg-cta" href="/#achadinhos">Ver ofertas</a>
+        </div>
+      </div>
+    </header>
+  )
 }
 
 function Footer(){
-  return <footer className="footer footer-pro"><div className="wrap footer-grid-pro"><div><div className="brand light brand-pro"><span>H</span><strong>HIPERGIGA</strong></div><p>Curadoria de achadinhos e utilidades para o lar.</p></div><div><b>Explore</b><a href="/#categorias">Categorias</a><a href="/#achadinhos">Achadinhos</a><a href="/#dicas">Dicas</a></div><div><b>Transparência</b><p>Alguns links podem gerar comissão sem custo extra para você.</p></div><div><b>Admin</b><a href="/auth">Acesso administrativo</a></div></div><div className="wrap footer-bottom">© 2026 HIPERGIGA. Curadoria simples, escolha melhor.</div></footer>
+  return (
+    <footer className="hg-footer">
+      <div className="hg-wrap hg-footer-grid">
+        <div>
+          <img className="hg-footer-logo" src="/hipergiga-logo.svg" alt="HIPERGIGA"/>
+          <p>Mais praticidade para um lar mais feliz.</p>
+        </div>
+        <div>
+          <b>Explore</b>
+          <a href="/#categorias">Categorias</a>
+          <a href="/#achadinhos">Achadinhos</a>
+          <a href="/#dicas">Dicas</a>
+          <a href="/#sobre">Sobre</a>
+        </div>
+        <div>
+          <b>Transparência</b>
+          <p>Alguns links podem gerar comissão sem custo extra para você.</p>
+        </div>
+        <div>
+          <b>Admin</b>
+          <a href="/auth">Acesso administrativo</a>
+        </div>
+      </div>
+      <div className="hg-wrap hg-footer-bottom">© 2026 HIPERGIGA. Todos os direitos reservados.</div>
+    </footer>
+  )
 }
 
 function Document({children}:{children:ReactNode}){
-  return <html lang="pt-BR"><head><HeadContent/><link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet"/></head><body>{children}<Scripts/></body></html>
+  return (
+    <html lang="pt-BR">
+      <head>
+        <HeadContent/>
+        <link rel="preconnect" href="https://fonts.googleapis.com"/>
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous"/>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet"/>
+      </head>
+      <body>{children}<Scripts/></body>
+    </html>
+  )
 }
