@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react'
+import { useEffect, useState } from 'react'
 import { HeadContent, Outlet, Scripts, createRootRoute } from '@tanstack/react-router'
 import '../styles/global.css'
+import { supabase } from '../lib/supabase'
 
 export const Route = createRootRoute({
   head: () => ({
@@ -32,6 +34,7 @@ function Header(){
           <span>✓ Produtos selecionados</span>
           <span>♢ Transparência em afiliados</span>
           <b>Mais praticidade para a sua casa.</b>
+          <AdminAccess/>
         </div>
       </div>
       <header className="hg-header">
@@ -62,6 +65,38 @@ function Header(){
   )
 }
 
+function AdminAccess(){
+  const [isAdmin, setIsAdmin] = useState(false)
+
+  useEffect(() => {
+    let active = true
+
+    async function checkAdmin() {
+      const { data } = await supabase.auth.getUser()
+      if (!data.user || !active) return
+
+      const { data: role } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', data.user.id)
+        .eq('role', 'admin')
+        .maybeSingle()
+
+      if (active) setIsAdmin(Boolean(role))
+    }
+
+    checkAdmin()
+
+    return () => {
+      active = false
+    }
+  }, [])
+
+  if (!isAdmin) return null
+
+  return <a className="hg-admin-access" href="/admin">⚙ Painel Admin</a>
+}
+
 function Footer(){
   return (
     <>
@@ -81,10 +116,6 @@ function Footer(){
           <div>
             <b>Transparência</b>
             <p>Alguns links podem gerar comissão sem custo extra para você.</p>
-          </div>
-          <div>
-            <b>Admin</b>
-            <a href="/auth">Acesso administrativo</a>
           </div>
         </div>
         <div className="hg-wrap hg-footer-bottom">© 2026 HIPERGIGA. Todos os direitos reservados.</div>
