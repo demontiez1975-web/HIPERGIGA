@@ -23,6 +23,8 @@ type Product = {
   benefits: unknown
   images: string[]
   price: number | null
+  original_price: number | null
+  discount_percent: number
   store_name: string
   affiliate_url: string
   featured: boolean
@@ -51,6 +53,9 @@ const emptyProduct = {
   benefits: '',
   images: [] as string[],
   price: '',
+  original_price: '',
+  has_discount: false,
+  discount_percent: '0',
   store_name: '',
   affiliate_url: '',
   featured: false,
@@ -78,6 +83,16 @@ const emptyArticle = {
   published: false,
 }
 
+function slugify(value: string) {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
 function safeName(name: string) {
   return name
     .normalize('NFD')
@@ -85,6 +100,26 @@ function safeName(name: string) {
     .toLowerCase()
     .replace(/[^a-z0-9.]+/g, '-')
     .replace(/^-+|-+$/g, '')
+}
+
+function parsePrice(value: string) {
+  const trimmed = value.trim()
+  if (!trimmed) return null
+  const normalized = trimmed.includes(',')
+    ? trimmed.replace(/\./g, '').replace(',', '.')
+    : trimmed
+  const number = Number(normalized)
+  return Number.isFinite(number) ? number : null
+}
+
+function money(value: number | null) {
+  if (value == null) return 'Preço não informado'
+  return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+}
+
+function calculateDiscount(original: number | null, current: number | null) {
+  if (!original || !current || original <= current) return 0
+  return Math.min(99, Math.max(1, Math.round((1 - current / original) * 100)))
 }
 
 function Admin() {
@@ -121,7 +156,8 @@ function Admin() {
         .order('sort_order'),
       supabase
         .from('products')
-        .select('id,category_id,title,slug,description,benefits,images,price,store_name,affiliate_url,featured,badge,active')
+        .select('id,category_id,title,slug,description,benefits,images,price,original_price,discount_percent,store_name,affiliate_url,featured,badge,active')
+        .neq('affiliate_url', 'https://example.com')
         .order('created_at', { ascending: false }),
       supabase
         .from('articles')
@@ -184,6 +220,10 @@ function Admin() {
     [categories],
   )
 
+  const previewPrice = parsePrice(productForm.price)
+  const previewOriginal = productForm.has_discount ? parsePrice(productForm.original_price) : null
+  const previewDiscount = productForm.has_discount ? Number(productForm.discount_percent || 0) : 0
+
   async function signOut() {
     await supabase.auth.signOut()
     if (typeof window !== 'undefined') window.location.href = '/auth'
@@ -195,7 +235,7 @@ function Admin() {
 
     const ext = file.name.includes('.') ? file.name.split('.').pop() : 'jpg'
     const base = safeName(file.name.replace(/\.[^.]+$/, '')) || 'imagem'
-    const path = `${folder}/${Date.now()}-${base}.${ext}`
+    const path = folder + '/' + Date.now() + '-' + base + '.' + ext
 
     const { error } = await supabase.storage
       .from('hipergiga-media')
@@ -220,7 +260,7 @@ function Admin() {
     try {
       const remaining = Math.max(0, 6 - productForm.images.length)
       const selected = files.slice(0, remaining)
-      const urls = []
+      const urls: string[] = []
 
       for (const file of selected) {
         urls.push(await uploadImage(file, 'products'))
@@ -230,7 +270,7 @@ function Admin() {
         ...current,
         images: [...current.images, ...urls],
       }))
-      setMessage(`${urls.length} imagem(ns) enviada(s).`)
+      setMessage(urls.length + ' imagem(ns) enviada(s).')
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Falha no upload.')
     } finally {
@@ -277,23 +317,88 @@ function Admin() {
     }
   }
 
+  function makeMainImage(index: number) {
+    setProductForm(current => {
+      const images = [...current.images]
+      const selected = images.splice(index, 1)[0]
+      return { ...current, images: [selected, ...images] }
+    })
+  }
+
+  function updateCurrentPrice(value: string) {
+    const original = parsePrice(productForm.original_price)
+    const current = parsePrice(value)
+    const autoDiscount = calculateDiscount(original, current)
+
+    setProductForm(currentForm => ({
+      ...currentForm,
+      price: value,
+      discount_percent:
+        currentForm.has_discount && autoDiscount > 0
+          ? String(autoDiscount)
+          : currentForm.discount_percent,
+    }))
+  }
+
+  function updateOriginalPrice(value: string) {
+    const original = parsePrice(value)
+    const current = parsePrice(productForm.price)
+    const autoDiscount = calculateDiscount(original, current)
+
+    setProductForm(currentForm => ({
+      ...currentForm,
+      original_price: value,
+      discount_percent: autoDiscount > 0 ? String(autoDiscount) : currentForm.discount_percent,
+    }))
+  }
+
   async function saveProduct(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setMessage('')
+
+    if (!productForm.category_id) {
+      setMessage('Escolha uma categoria para o produto.')
+      return
+    }
+
+    if (!productForm.images.length) {
+      setMessage('Carregue pelo menos uma foto do produto.')
+      return
+    }
+
+    const price = parsePrice(productForm.price)
+    const originalPrice = productForm.has_discount ? parsePrice(productForm.original_price) : null
+    const discountPercent = productForm.has_discount
+      ? Math.min(99, Math.max(0, Number(productForm.discount_percent || 0)))
+      : 0
+
+    if (price == null || price < 0) {
+      setMessage('Informe um preço válido.')
+      return
+    }
+
+    if (productForm.has_discount && discountPercent <= 0) {
+      setMessage('Informe a porcentagem do desconto.')
+      return
+    }
 
     const benefits = productForm.benefits
       .split('\n')
       .map(item => item.trim())
       .filter(Boolean)
 
+    const generatedSlug = productForm.slug || slugify(productForm.title)
+
     const payload = {
-      category_id: productForm.category_id || null,
+      category_id: productForm.category_id,
       title: productForm.title.trim(),
-      slug: productForm.slug.trim(),
+      slug: generatedSlug,
       description: productForm.description.trim() || null,
       benefits,
       images: productForm.images,
-      price: productForm.price ? Number(productForm.price.replace(',', '.')) : null,
+      price,
+      original_price: originalPrice,
+      discount_percent: discountPercent,
       store_name: productForm.store_name.trim(),
       affiliate_url: productForm.affiliate_url.trim(),
       featured: productForm.featured,
@@ -307,13 +412,14 @@ function Admin() {
       : supabase.from('products').insert(payload)
 
     const { error } = await query
+
     if (error) {
-      setMessage(error.message)
+      setMessage(error.code === '23505' ? 'Já existe um produto com esse nome/slug.' : error.message)
       return
     }
 
     setProductForm({ ...emptyProduct })
-    setMessage(productForm.id ? 'Produto atualizado.' : 'Produto criado.')
+    setMessage(productForm.id ? 'Produto atualizado com sucesso.' : 'Produto publicado com sucesso.')
     await loadData()
   }
 
@@ -321,9 +427,10 @@ function Admin() {
     event.preventDefault()
     setMessage('')
 
+    const generatedSlug = categoryForm.slug || slugify(categoryForm.name)
     const payload = {
       name: categoryForm.name.trim(),
-      slug: categoryForm.slug.trim(),
+      slug: generatedSlug,
       description: categoryForm.description.trim() || null,
       image_url: categoryForm.image_url.trim() || null,
       sort_order: Number(categoryForm.sort_order || 0),
@@ -349,9 +456,10 @@ function Admin() {
     event.preventDefault()
     setMessage('')
 
+    const generatedSlug = articleForm.slug || slugify(articleForm.title)
     const payload = {
       title: articleForm.title.trim(),
-      slug: articleForm.slug.trim(),
+      slug: generatedSlug,
       summary: articleForm.summary.trim() || null,
       content: articleForm.content.trim() || null,
       cover_image_url: articleForm.cover_image_url.trim() || null,
@@ -401,6 +509,9 @@ function Admin() {
       benefits,
       images: Array.isArray(product.images) ? product.images : [],
       price: product.price?.toString() ?? '',
+      original_price: product.original_price?.toString() ?? '',
+      has_discount: (product.discount_percent ?? 0) > 0,
+      discount_percent: String(product.discount_percent ?? 0),
       store_name: product.store_name,
       affiliate_url: product.affiliate_url,
       featured: product.featured,
@@ -408,6 +519,7 @@ function Admin() {
       active: product.active,
     })
     setTab('products')
+    if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   if (authorized === null) {
@@ -432,6 +544,7 @@ function Admin() {
           <div>
             <span className="eyebrow coral">PAINEL ADMINISTRATIVO</span>
             <h1>HIPERGIGA Admin</h1>
+            <p>Cadastre produtos, imagens, ofertas e links das lojas sem mexer no código.</p>
           </div>
           <a className="btn primary" href="/" target="_blank" rel="noreferrer">Ver site</a>
         </div>
@@ -441,97 +554,246 @@ function Admin() {
         {tab === 'dashboard' && (
           <>
             <div className="metrics">
-              <div><span>Produtos</span><strong>{products.length}</strong></div>
+              <div><span>Produtos reais</span><strong>{products.length}</strong></div>
               <div><span>Cliques hoje</span><strong>{clicksToday}</strong></div>
               <div><span>Cliques em 7 dias</span><strong>{clicks7Days}</strong></div>
               <div><span>Assinantes</span><strong>{subscribers}</strong></div>
             </div>
 
+            <div className="admin-quick-grid">
+              <button className="admin-quick-card" onClick={() => { setProductForm({ ...emptyProduct }); setTab('products') }}>
+                <span>＋</span>
+                <div><b>Novo produto</b><small>Foto, preço, desconto e link da loja.</small></div>
+              </button>
+              <button className="admin-quick-card" onClick={() => setTab('categories')}>
+                <span>▦</span>
+                <div><b>Editar categorias</b><small>Imagens e organização da vitrine.</small></div>
+              </button>
+              <button className="admin-quick-card" onClick={() => setTab('articles')}>
+                <span>✎</span>
+                <div><b>Novo conteúdo</b><small>Dicas e artigos da HIPERGIGA.</small></div>
+              </button>
+            </div>
+
             <div className="admin-card">
-              <h2>Resumo do catálogo</h2>
-              <p>{categories.length} categorias · {articles.length} artigos · {products.filter(product => product.active).length} produtos ativos.</p>
+              <h2>Catálogo</h2>
+              <p>{categories.length} categorias · {products.filter(product => product.active).length} produtos publicados · {articles.length} artigos.</p>
             </div>
           </>
         )}
 
         {tab === 'products' && (
-          <div className="admin-grid">
-            <form className="admin-card admin-form" onSubmit={saveProduct}>
-              <h2>{productForm.id ? 'Editar produto' : 'Novo produto'}</h2>
-
-              <label>
-                Categoria
-                <select value={productForm.category_id} onChange={event => setProductForm({ ...productForm, category_id: event.target.value })}>
-                  <option value="">Sem categoria</option>
-                  {categories.map(category => <option key={category.id} value={category.id}>{category.name}</option>)}
-                </select>
-              </label>
-
-              <label>Título<input value={productForm.title} onChange={event => setProductForm({ ...productForm, title: event.target.value })} required /></label>
-              <label>Slug<input value={productForm.slug} onChange={event => setProductForm({ ...productForm, slug: event.target.value })} required /></label>
-              <label>Descrição<textarea value={productForm.description} onChange={event => setProductForm({ ...productForm, description: event.target.value })} /></label>
-              <label>Benefícios <small>um por linha</small><textarea value={productForm.benefits} onChange={event => setProductForm({ ...productForm, benefits: event.target.value })} /></label>
-
-              <div className="admin-upload-box">
+          <div className="admin-product-layout">
+            <form className="admin-card admin-form admin-product-editor" onSubmit={saveProduct}>
+              <div className="admin-form-title">
                 <div>
-                  <b>Fotos do produto</b>
-                  <small>Até 6 imagens. JPG, PNG, WEBP ou GIF, até 5 MB cada.</small>
+                  <span className="admin-step">CATÁLOGO</span>
+                  <h2>{productForm.id ? 'Editar produto' : 'Adicionar produto'}</h2>
+                  <p>Preencha apenas o que o cliente precisa para escolher e comprar.</p>
                 </div>
-                <label className="btn ghost admin-file-btn">
-                  {uploading ? 'Enviando...' : 'Carregar imagens'}
-                  <input type="file" accept="image/*" multiple onChange={uploadProductImages} disabled={uploading || productForm.images.length >= 6} />
+                {productForm.id && <button className="btn ghost" type="button" onClick={() => setProductForm({ ...emptyProduct })}>Novo produto</button>}
+              </div>
+
+              <section className="admin-form-section">
+                <div className="admin-section-heading"><span>1</span><div><b>Produto</b><small>Informações principais da oferta.</small></div></div>
+
+                <label>
+                  Categoria
+                  <select value={productForm.category_id} onChange={event => setProductForm({ ...productForm, category_id: event.target.value })} required>
+                    <option value="">Escolha uma categoria</option>
+                    {categories.filter(category => category.active).map(category => <option key={category.id} value={category.id}>{category.name}</option>)}
+                  </select>
                 </label>
-              </div>
 
-              {productForm.images.length > 0 && (
-                <div className="admin-image-grid">
-                  {productForm.images.map((url, index) => (
-                    <div className="admin-image-thumb" key={url + index}>
-                      <img src={url} alt={'Produto ' + (index + 1)} />
-                      {index === 0 && <span>Principal</span>}
-                      <button type="button" onClick={() => setProductForm(current => ({ ...current, images: current.images.filter((_, i) => i !== index) }))}>×</button>
-                    </div>
-                  ))}
+                <label>
+                  Nome do produto
+                  <input
+                    value={productForm.title}
+                    onChange={event => setProductForm(current => ({
+                      ...current,
+                      title: event.target.value,
+                      slug: current.id ? current.slug : slugify(event.target.value),
+                    }))}
+                    placeholder="Ex.: Organizador giratório para temperos"
+                    required
+                  />
+                </label>
+
+                <label>
+                  Descrição
+                  <textarea
+                    value={productForm.description}
+                    onChange={event => setProductForm({ ...productForm, description: event.target.value })}
+                    placeholder="Explique em poucas linhas por que esse produto é útil."
+                    required
+                  />
+                </label>
+
+                <label>
+                  Benefícios <small>um por linha</small>
+                  <textarea
+                    value={productForm.benefits}
+                    onChange={event => setProductForm({ ...productForm, benefits: event.target.value })}
+                    placeholder={'Economiza espaço\nFácil de limpar\nBoa avaliação dos compradores'}
+                  />
+                </label>
+              </section>
+
+              <section className="admin-form-section">
+                <div className="admin-section-heading"><span>2</span><div><b>Fotos</b><small>A primeira imagem é a principal.</small></div></div>
+
+                <div className="admin-upload-box">
+                  <div>
+                    <b>Fotos do produto</b>
+                    <small>Até 6 imagens. JPG, PNG, WEBP ou GIF, até 5 MB cada.</small>
+                  </div>
+                  <label className="btn ghost admin-file-btn">
+                    {uploading ? 'Enviando...' : 'Carregar fotos'}
+                    <input type="file" accept="image/*" multiple onChange={uploadProductImages} disabled={uploading || productForm.images.length >= 6} />
+                  </label>
                 </div>
-              )}
 
-              <div className="form-row">
-                <label>Preço<input inputMode="decimal" value={productForm.price} onChange={event => setProductForm({ ...productForm, price: event.target.value })} /></label>
-                <label>Selo<input value={productForm.badge} onChange={event => setProductForm({ ...productForm, badge: event.target.value })} placeholder="Mais vendido" /></label>
-              </div>
+                {productForm.images.length > 0 && (
+                  <div className="admin-image-grid">
+                    {productForm.images.map((url, index) => (
+                      <div className="admin-image-thumb" key={url + index}>
+                        <img src={url} alt={'Produto ' + (index + 1)} />
+                        {index === 0 ? <span>Principal</span> : <button className="make-main" type="button" onClick={() => makeMainImage(index)}>★</button>}
+                        <button className="remove-image" type="button" onClick={() => setProductForm(current => ({ ...current, images: current.images.filter((_, i) => i !== index) }))}>×</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
 
-              <label>Loja parceira<input value={productForm.store_name} onChange={event => setProductForm({ ...productForm, store_name: event.target.value })} placeholder="Amazon, Mercado Livre, Shopee..." required /></label>
-              <label>Link da oferta / afiliado<input type="url" value={productForm.affiliate_url} onChange={event => setProductForm({ ...productForm, affiliate_url: event.target.value })} placeholder="https://..." required /></label>
+              <section className="admin-form-section">
+                <div className="admin-section-heading"><span>3</span><div><b>Oferta</b><small>Preço, desconto e destino da compra.</small></div></div>
 
-              <div className="check-row">
-                <label><input type="checkbox" checked={productForm.featured} onChange={event => setProductForm({ ...productForm, featured: event.target.checked })} /> Destaque</label>
-                <label><input type="checkbox" checked={productForm.active} onChange={event => setProductForm({ ...productForm, active: event.target.checked })} /> Ativo</label>
-              </div>
+                <div className="form-row">
+                  <label>
+                    Preço atual
+                    <input inputMode="decimal" value={productForm.price} onChange={event => updateCurrentPrice(event.target.value)} placeholder="99,90" required />
+                  </label>
 
-              <div className="form-actions">
-                <button className="btn primary" type="submit" disabled={uploading}>{productForm.id ? 'Salvar alterações' : 'Criar produto'}</button>
-                {productForm.id && <button className="btn ghost" type="button" onClick={() => setProductForm({ ...emptyProduct })}>Cancelar</button>}
+                  <label>
+                    Loja
+                    <input value={productForm.store_name} onChange={event => setProductForm({ ...productForm, store_name: event.target.value })} placeholder="Amazon, Shopee, Mercado Livre..." required />
+                  </label>
+                </div>
+
+                <label className="admin-toggle-line">
+                  <input
+                    type="checkbox"
+                    checked={productForm.has_discount}
+                    onChange={event => setProductForm(current => ({
+                      ...current,
+                      has_discount: event.target.checked,
+                      original_price: event.target.checked ? current.original_price : '',
+                      discount_percent: event.target.checked ? current.discount_percent : '0',
+                    }))}
+                  />
+                  <span><b>Este produto está com desconto</b><small>Mostra a porcentagem de economia para o cliente.</small></span>
+                </label>
+
+                {productForm.has_discount && (
+                  <div className="form-row">
+                    <label>
+                      Preço anterior <small>opcional</small>
+                      <input inputMode="decimal" value={productForm.original_price} onChange={event => updateOriginalPrice(event.target.value)} placeholder="129,90" />
+                    </label>
+                    <label>
+                      Desconto (%)
+                      <input type="number" min="1" max="99" value={productForm.discount_percent} onChange={event => setProductForm({ ...productForm, discount_percent: event.target.value })} placeholder="20" required />
+                    </label>
+                  </div>
+                )}
+
+                <label>
+                  Link para comprar / link de afiliado
+                  <input
+                    type="url"
+                    value={productForm.affiliate_url}
+                    onChange={event => setProductForm({ ...productForm, affiliate_url: event.target.value })}
+                    placeholder="https://..."
+                    required
+                  />
+                  <small>Quando o cliente clicar em “Ver na loja”, ele será enviado diretamente para este endereço.</small>
+                </label>
+
+                <label>
+                  Selo <small>opcional</small>
+                  <input value={productForm.badge} onChange={event => setProductForm({ ...productForm, badge: event.target.value })} placeholder="Ex.: Mais vendido, Achadinho, Oferta do dia" />
+                </label>
+              </section>
+
+              <section className="admin-form-section">
+                <div className="admin-section-heading"><span>4</span><div><b>Publicação</b><small>Controle onde o produto aparece.</small></div></div>
+
+                <div className="admin-publish-options">
+                  <label>
+                    <input type="checkbox" checked={productForm.featured} onChange={event => setProductForm({ ...productForm, featured: event.target.checked })} />
+                    <span><b>Destaque na Home</b><small>Coloca o produto entre os principais achadinhos.</small></span>
+                  </label>
+                  <label>
+                    <input type="checkbox" checked={productForm.active} onChange={event => setProductForm({ ...productForm, active: event.target.checked })} />
+                    <span><b>Publicado no site</b><small>Desmarque para salvar sem exibir aos clientes.</small></span>
+                  </label>
+                </div>
+              </section>
+
+              <div className="admin-save-bar">
+                <button className="btn primary" type="submit" disabled={uploading}>
+                  {productForm.id ? 'Salvar alterações' : 'Adicionar produto'}
+                </button>
+                {productForm.id && <button className="btn ghost" type="button" onClick={() => setProductForm({ ...emptyProduct })}>Cancelar edição</button>}
               </div>
             </form>
 
-            <div className="admin-card admin-list">
-              <h2>Produtos cadastrados</h2>
-              {products.map(product => (
-                <div className="admin-list-row" key={product.id}>
-                  <div className="admin-list-item">
-                    {product.images?.[0] && <img src={product.images[0]} alt="" />}
-                    <div>
-                      <b>{product.title}</b>
-                      <small>{categoryName.get(product.category_id ?? '') ?? 'Sem categoria'} · {product.store_name}</small>
+            <aside className="admin-product-side">
+              <div className="admin-card admin-preview-card">
+                <span className="admin-step">PRÉVIA</span>
+                <h3>Como o cliente vai ver</h3>
+                <div className="admin-preview-image">
+                  {productForm.images[0]
+                    ? <img src={productForm.images[0]} alt="" />
+                    : <div>Carregue uma foto</div>}
+                  {previewDiscount > 0 && <span>-{previewDiscount}%</span>}
+                </div>
+                <small>{productForm.store_name || 'Loja parceira'}</small>
+                <b>{productForm.title || 'Nome do produto'}</b>
+                {previewOriginal && <del>{money(previewOriginal)}</del>}
+                <strong>{money(previewPrice)}</strong>
+                <button type="button" disabled>Ver na loja →</button>
+              </div>
+
+              <div className="admin-card admin-list">
+                <div className="admin-list-title">
+                  <h2>Produtos</h2>
+                  <span>{products.length}</span>
+                </div>
+                {products.length === 0 && <p className="admin-empty">Nenhum produto real cadastrado ainda.</p>}
+                {products.map(product => (
+                  <div className="admin-list-row" key={product.id}>
+                    <div className="admin-list-item">
+                      {product.images?.[0] && <img src={product.images[0]} alt="" />}
+                      <div>
+                        <b>{product.title}</b>
+                        <small>{categoryName.get(product.category_id ?? '') ?? 'Sem categoria'} · {money(product.price)}</small>
+                        <div className="admin-status-row">
+                          <span className={product.active ? 'status-live' : 'status-draft'}>{product.active ? 'Publicado' : 'Rascunho'}</span>
+                          {product.featured && <span className="status-featured">Destaque</span>}
+                          {product.discount_percent > 0 && <span className="status-sale">-{product.discount_percent}%</span>}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="row-actions">
+                      <button onClick={() => editProduct(product)}>Editar</button>
+                      <button className="danger" onClick={() => removeRow('products', product.id)}>Excluir</button>
                     </div>
                   </div>
-                  <div className="row-actions">
-                    <button onClick={() => editProduct(product)}>Editar</button>
-                    <button className="danger" onClick={() => removeRow('products', product.id)}>Excluir</button>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            </aside>
           </div>
         )}
 
@@ -539,14 +801,13 @@ function Admin() {
           <div className="admin-grid">
             <form className="admin-card admin-form" onSubmit={saveCategory}>
               <h2>{categoryForm.id ? 'Editar categoria' : 'Nova categoria'}</h2>
-              <label>Nome<input value={categoryForm.name} onChange={event => setCategoryForm({ ...categoryForm, name: event.target.value })} required /></label>
-              <label>Slug<input value={categoryForm.slug} onChange={event => setCategoryForm({ ...categoryForm, slug: event.target.value })} required /></label>
+              <label>Nome<input value={categoryForm.name} onChange={event => setCategoryForm(current => ({ ...current, name: event.target.value, slug: current.id ? current.slug : slugify(event.target.value) }))} required /></label>
               <label>Descrição<textarea value={categoryForm.description} onChange={event => setCategoryForm({ ...categoryForm, description: event.target.value })} /></label>
 
               <div className="admin-upload-box">
                 <div>
                   <b>Imagem da categoria</b>
-                  <small>Imagem exibida nos cards da Home.</small>
+                  <small>Essa imagem aparece nos cards da Home.</small>
                 </div>
                 <label className="btn ghost admin-file-btn">
                   {uploading ? 'Enviando...' : 'Carregar imagem'}
@@ -562,7 +823,7 @@ function Admin() {
               )}
 
               <label>Ordem<input type="number" value={categoryForm.sort_order} onChange={event => setCategoryForm({ ...categoryForm, sort_order: event.target.value })} /></label>
-              <label className="inline-check"><input type="checkbox" checked={categoryForm.active} onChange={event => setCategoryForm({ ...categoryForm, active: event.target.checked })} /> Ativa</label>
+              <label className="inline-check"><input type="checkbox" checked={categoryForm.active} onChange={event => setCategoryForm({ ...categoryForm, active: event.target.checked })} /> Categoria ativa</label>
 
               <div className="form-actions">
                 <button className="btn primary" type="submit" disabled={uploading}>{categoryForm.id ? 'Salvar alterações' : 'Criar categoria'}</button>
@@ -578,7 +839,7 @@ function Admin() {
                     {category.image_url && <img src={category.image_url} alt="" />}
                     <div>
                       <b>{category.name}</b>
-                      <small>/{category.slug} · ordem {category.sort_order}</small>
+                      <small>ordem {category.sort_order} · {category.active ? 'ativa' : 'oculta'}</small>
                     </div>
                   </div>
                   <div className="row-actions">
@@ -592,7 +853,6 @@ function Admin() {
                         sort_order: String(category.sort_order),
                         active: category.active,
                       })
-                      setTab('categories')
                     }}>Editar</button>
                     <button className="danger" onClick={() => removeRow('categories', category.id)}>Excluir</button>
                   </div>
@@ -606,8 +866,7 @@ function Admin() {
           <div className="admin-grid">
             <form className="admin-card admin-form" onSubmit={saveArticle}>
               <h2>{articleForm.id ? 'Editar artigo' : 'Novo artigo'}</h2>
-              <label>Título<input value={articleForm.title} onChange={event => setArticleForm({ ...articleForm, title: event.target.value })} required /></label>
-              <label>Slug<input value={articleForm.slug} onChange={event => setArticleForm({ ...articleForm, slug: event.target.value })} required /></label>
+              <label>Título<input value={articleForm.title} onChange={event => setArticleForm(current => ({ ...current, title: event.target.value, slug: current.id ? current.slug : slugify(event.target.value) }))} required /></label>
               <label>Resumo<textarea value={articleForm.summary} onChange={event => setArticleForm({ ...articleForm, summary: event.target.value })} /></label>
               <label>Conteúdo<textarea className="large-textarea" value={articleForm.content} onChange={event => setArticleForm({ ...articleForm, content: event.target.value })} /></label>
 
@@ -659,7 +918,6 @@ function Admin() {
                         cover_image_url: article.cover_image_url ?? '',
                         published: article.published,
                       })
-                      setTab('articles')
                     }}>Editar</button>
                     <button className="danger" onClick={() => removeRow('articles', article.id)}>Excluir</button>
                   </div>
