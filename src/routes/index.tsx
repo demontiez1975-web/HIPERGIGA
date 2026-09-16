@@ -50,7 +50,7 @@ const categoryPhotos:Record<string,string>={
         </div>
 
         <div className="hg-hero-photo">
-          <img src="https://images.unsplash.com/photo-1768876798875-6bedec06ce61?auto=format&fit=crop&w=1800&q=88" alt="Mulher jovem organizando uma cozinha moderna"/>
+          <img src="https://images.pexels.com/photos/3960720/pexels-photo-3960720.jpeg?auto=compress&cs=tinysrgb&w=1800" alt="Mulher jovem cozinhando em uma cozinha moderna e organizada"/>
           <div className="hg-hero-note">Pequenas escolhas,<br/>grandes mudanças ♥</div><div className="hg-photo-card"><span>⌂</span><div><b>Organização também é qualidade de vida.</b><small>Ideias simples para uma rotina mais leve.</small></div></div>
         </div>
       </div>
