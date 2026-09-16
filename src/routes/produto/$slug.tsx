@@ -1,4 +1,4 @@
-import { MouseEvent, useState } from 'react'
+import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { supabase } from '../../lib/supabase'
 
@@ -45,32 +45,23 @@ function Page() {
     ? product.benefits.filter((item): item is string => typeof item === 'string')
     : []
 
-  async function handleOfferClick(event: MouseEvent<HTMLAnchorElement>) {
-    event.preventDefault()
+  function handleOfferClick() {
+    if (typeof window === 'undefined') return
 
-    const pageUrl = typeof window !== 'undefined' ? window.location.href : null
-    const referrer = typeof document !== 'undefined' ? document.referrer || null : null
-    const params = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null
+    const params = new URLSearchParams(window.location.search)
 
-    const insertPromise = supabase.from('affiliate_clicks').insert({
+    void supabase.from('affiliate_clicks').insert({
       product_id: product.id,
       store_name: product.store_name,
       source: 'product_page',
-      utm_source: params?.get('utm_source'),
-      utm_medium: params?.get('utm_medium'),
-      utm_campaign: params?.get('utm_campaign'),
-      utm_content: params?.get('utm_content'),
-      utm_term: params?.get('utm_term'),
-      referrer,
-      page_url: pageUrl,
+      utm_source: params.get('utm_source'),
+      utm_medium: params.get('utm_medium'),
+      utm_campaign: params.get('utm_campaign'),
+      utm_content: params.get('utm_content'),
+      utm_term: params.get('utm_term'),
+      referrer: document.referrer || null,
+      page_url: window.location.href,
     })
-
-    const timeout = new Promise(resolve => setTimeout(resolve, 250))
-    await Promise.race([insertPromise, timeout])
-
-    if (typeof window !== 'undefined') {
-      window.open(product.affiliate_url, '_blank', 'noopener,noreferrer')
-    }
   }
 
   return (
