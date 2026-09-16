@@ -564,3 +564,6 @@
   .product-detail{gap:26px}
   .product-thumbs button{width:68px;height:68px}
 }
+
+.article-main-photo{width:100%;height:360px;object-fit:cover;display:block}
+@media(max-width:560px){.article-main-photo{height:240px}}
