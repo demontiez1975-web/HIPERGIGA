@@ -15,6 +15,8 @@ type Product = {
   title: string
   slug: string
   price: number | null
+  original_price: number | null
+  discount_percent: number
   store_name: string
   badge: string | null
   category_id: string | null
@@ -44,7 +46,7 @@ export const Route = createFileRoute('/')({
         .order('sort_order'),
       supabase
         .from('products')
-        .select('id,title,slug,price,store_name,badge,category_id,images,affiliate_url')
+        .select('id,title,slug,price,original_price,discount_percent,store_name,badge,category_id,images,affiliate_url')
         .eq('active', true)
         .order('featured', { ascending: false })
         .order('verified_at', { ascending: false })
@@ -288,12 +290,16 @@ function Home() {
                     alt={product.title}
                   />
                   {product.badge && <span>{product.badge}</span>}
+                  {product.discount_percent > 0 && <i className="hg-discount-badge">-{product.discount_percent}%</i>}
                 </a>
 
                 <div className="hg-product-info">
                   <small>{product.store_name}</small>
                   <h3>{product.title}</h3>
-                  <strong>{money(product.price)}</strong>
+                  <div className="hg-price-stack">
+                    {product.original_price != null && product.discount_percent > 0 && <del>{money(product.original_price)}</del>}
+                    <strong>{money(product.price)}</strong>
+                  </div>
                   <a
                     className="hg-product-btn"
                     href={product.affiliate_url}
