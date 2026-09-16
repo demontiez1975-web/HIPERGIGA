@@ -64,36 +64,39 @@ function Header(){
 
 function Footer(){
   return (
-    <footer className="hg-footer">
-      <div className="hg-wrap hg-footer-grid">
-        <div>
-          <img className="hg-footer-logo" src="/hipergiga-logo.svg" alt="HIPERGIGA"/>
-          <p>Mais praticidade para um lar mais feliz.</p>
+    <>
+      <footer className="hg-footer">
+        <div className="hg-wrap hg-footer-grid">
+          <div>
+            <img className="hg-footer-logo" src="/hipergiga-logo.svg" alt="HIPERGIGA"/>
+            <p>Mais praticidade para um lar mais feliz.</p>
+          </div>
+          <div>
+            <b>Explore</b>
+            <a href="/#categorias">Categorias</a>
+            <a href="/#achadinhos">Achadinhos</a>
+            <a href="/#dicas">Dicas</a>
+            <a href="/#sobre">Sobre</a>
+          </div>
+          <div>
+            <b>Transparência</b>
+            <p>Alguns links podem gerar comissão sem custo extra para você.</p>
+          </div>
+          <div>
+            <b>Admin</b>
+            <a href="/auth">Acesso administrativo</a>
+          </div>
         </div>
-        <div>
-          <b>Explore</b>
-          <a href="/#categorias">Categorias</a>
-          <a href="/#achadinhos">Achadinhos</a>
-          <a href="/#dicas">Dicas</a>
-          <a href="/#sobre">Sobre</a>
-        </div>
-        <div>
-          <b>Transparência</b>
-          <p>Alguns links podem gerar comissão sem custo extra para você.</p>
-        </div>
-        <div>
-          <b>Admin</b>
-          <a href="/auth">Acesso administrativo</a>
-        </div>
-      </div>
-      <div className="hg-wrap hg-footer-bottom">© 2026 HIPERGIGA. Todos os direitos reservados.</div>
-    </footer>
-    <nav className="hg-mobile-bottom" aria-label="Navegação mobile">
-      <a href="/"><span>⌂</span><b>Início</b></a>
-      <a href="/#categorias"><span>▦</span><b>Categorias</b></a>
-      <a href="/#achadinhos"><span>♡</span><b>Achadinhos</b></a>
-      <a href="/#dicas"><span>☷</span><b>Dicas</b></a>
-    </nav>
+        <div className="hg-wrap hg-footer-bottom">© 2026 HIPERGIGA. Todos os direitos reservados.</div>
+      </footer>
+
+      <nav className="hg-mobile-bottom" aria-label="Navegação mobile">
+        <a href="/"><span>⌂</span><b>Início</b></a>
+        <a href="/#categorias"><span>▦</span><b>Categorias</b></a>
+        <a href="/#achadinhos"><span>♡</span><b>Achadinhos</b></a>
+        <a href="/#dicas"><span>☷</span><b>Dicas</b></a>
+      </nav>
+    </>
   )
 }
 
