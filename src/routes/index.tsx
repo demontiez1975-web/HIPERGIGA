@@ -19,6 +19,7 @@ type Product = {
   badge: string | null
   category_id: string | null
   images: string[]
+  affiliate_url: string
 }
 
 type Article = {
@@ -43,7 +44,7 @@ export const Route = createFileRoute('/')({
         .order('sort_order'),
       supabase
         .from('products')
-        .select('id,title,slug,price,store_name,badge,category_id,images')
+        .select('id,title,slug,price,store_name,badge,category_id,images,affiliate_url')
         .eq('active', true)
         .order('featured', { ascending: false })
         .order('verified_at', { ascending: false })
@@ -116,6 +117,25 @@ const heroPhoto =
 
 function Home() {
   const { categories, products, articles } = Route.useLoaderData()
+
+  function trackOffer(product: Product) {
+    if (typeof window === 'undefined') return
+
+    const params = new URLSearchParams(window.location.search)
+
+    void supabase.from('affiliate_clicks').insert({
+      product_id: product.id,
+      store_name: product.store_name,
+      source: 'homepage',
+      utm_source: params.get('utm_source'),
+      utm_medium: params.get('utm_medium'),
+      utm_campaign: params.get('utm_campaign'),
+      utm_content: params.get('utm_content'),
+      utm_term: params.get('utm_term'),
+      referrer: document.referrer || null,
+      page_url: window.location.href,
+    })
+  }
   const [email, setEmail] = useState('')
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
@@ -276,7 +296,10 @@ function Home() {
                   <strong>{money(product.price)}</strong>
                   <a
                     className="hg-product-btn"
-                    href={'/produto/' + product.slug}
+                    href={product.affiliate_url}
+                    target="_blank"
+                    rel="sponsored noopener noreferrer"
+                    onClick={() => trackOffer(product)}
                   >
                     Ver na loja →
                   </a>
