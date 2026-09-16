@@ -31,51 +31,7 @@ function money(v:number|null){
 }
 
 const categoryPhotos:Record<string,string>={
-  cozinha:'https://images.unsplash.com/photo-1556911220-bff31c812dba?auto=format&fit=crop&w=900&q=82',
-  organizacao:'https://images.unsplash.com/photo-1558997519-83ea9252edf8?auto=format&fit=crop&w=900&q=82',
-  limpeza:'https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&w=900&q=82',
-  banheiro:'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=900&q=82',
-  decoracao:'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&w=900&q=82',
-  'casas-pequenas':'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=900&q=82',
-  'tecnologia-para-o-lar':'https://images.unsplash.com/photo-1558089687-f282ffcbc126?auto=format&fit=crop&w=900&q=82',
-}
-
-const productPhotos=[
-  'https://images.unsplash.com/photo-1585515320310-259814833e62?auto=format&fit=crop&w=900&q=82',
-  'https://images.unsplash.com/photo-1558317374-067fb5f30001?auto=format&fit=crop&w=900&q=82',
-  'https://images.unsplash.com/photo-1610701596007-11502861dcfa?auto=format&fit=crop&w=900&q=82',
-  'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&w=900&q=82',
-  'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=900&q=82',
-  'https://images.unsplash.com/photo-1507473885765-e6ed057f782c?auto=format&fit=crop&w=900&q=82',
-  'https://images.unsplash.com/photo-1600494603989-9650cf6ddd3d?auto=format&fit=crop&w=900&q=82',
-  'https://images.unsplash.com/photo-1594224457860-23bdb45f8e3d?auto=format&fit=crop&w=900&q=82',
-]
-
-const articlePhotos=[
-  'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?auto=format&fit=crop&w=1000&q=82',
-  'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=1000&q=82',
-  'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=1000&q=82',
-]
-
-function Home(){
-  const {categories,products,articles}=Route.useLoaderData()
-  const [email,setEmail]=useState('')
-  const [message,setMessage]=useState('')
-  const [loading,setLoading]=useState(false)
-
-  async function subscribe(event:FormEvent<HTMLFormElement>){
-    event.preventDefault()
-    setLoading(true); setMessage('')
-    const {error}=await supabase.from('newsletter_subscribers').insert({email:email.trim().toLowerCase(),source:'homepage'})
-    if(error){
-      setMessage(error.code==='23505'?'Esse e-mail já está cadastrado.':'Não foi possível cadastrar agora.')
-      setLoading(false); return
-    }
-    setMessage('Pronto! Você entrou para a lista da HIPERGIGA.')
-    setEmail(''); setLoading(false)
-  }
-
-  return <main className="hg-home">
+  cozinha:'https://images.pexels.com/photos/8580764/pexels-photo-8580764.jpeg?auto=compress&dpr=1&w=1600"hg-home">
     <section className="hg-hero">
       <div className="hg-wrap hg-hero-grid">
         <div className="hg-hero-copy">
@@ -94,7 +50,7 @@ function Home(){
         </div>
 
         <div className="hg-hero-photo">
-          <img src="https://images.unsplash.com/photo-1768876798875-6bedec06ce61?auto=format&fit=crop&w=1800&q=88" alt="Cozinha organizada e acolhedora"/>
+          <img src="https://images.unsplash.com/photo-1768876798875-6bedec06ce61?auto=format&fit=crop&w=1800&q=88" alt="Mulher jovem organizando uma cozinha moderna"/>
           <div className="hg-hero-note">Pequenas escolhas,<br/>grandes mudanças ♥</div><div className="hg-photo-card"><span>⌂</span><div><b>Organização também é qualidade de vida.</b><small>Ideias simples para uma rotina mais leve.</small></div></div>
         </div>
       </div>
