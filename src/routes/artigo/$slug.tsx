@@ -32,7 +32,9 @@ function ArticlePage() {
           {article.summary && <p>{article.summary}</p>}
         </header>
         <article className="article-content">
-          <div className="article-main-cover">H</div>
+          {article.cover_image_url
+            ? <img className="article-main-photo" src={article.cover_image_url} alt={article.title} />
+            : <div className="article-main-cover">H</div>}
           <div className="article-body">
             {(article.content ?? '').split('\n').filter(Boolean).map((paragraph, index) => <p key={index}>{paragraph}</p>)}
           </div>
