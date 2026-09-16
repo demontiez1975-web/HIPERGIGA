@@ -595,3 +595,38 @@
 @media(max-width:560px){
   .hg-footer-grid{grid-template-columns:1fr}
 }
+
+/* Login/Admin access always visible */
+.hg-mobile-admin-access{display:none}
+@media(max-width:820px){
+  .hg-mobile-search{display:none!important}
+  .hg-mobile-admin-access{
+    display:inline-flex!important;
+    position:absolute;
+    right:4px;
+    top:14px;
+    height:36px;
+    padding:0 12px;
+    align-items:center;
+    justify-content:center;
+    background:var(--teal);
+    color:#fff;
+    border:0;
+    border-radius:999px;
+    font-size:10px;
+    font-weight:800;
+    z-index:4;
+  }
+  .hg-mobile-admin-access:hover{
+    background:var(--teal-dark);
+    color:#fff;
+  }
+}
+@media(max-width:560px){
+  .hg-mobile-admin-access{
+    top:12px;
+    height:34px;
+    padding:0 10px;
+    font-size:9px;
+  }
+}
