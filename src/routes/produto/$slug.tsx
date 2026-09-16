@@ -6,7 +6,7 @@ export const Route = createFileRoute('/produto/$slug')({
   loader: async ({ params }) => {
     const { data: product, error } = await supabase
       .from('products')
-      .select('id,title,slug,description,benefits,images,price,store_name,affiliate_url,badge,verified_at,category_id')
+      .select('id,title,slug,description,benefits,images,price,original_price,discount_percent,store_name,affiliate_url,badge,verified_at,category_id')
       .eq('slug', params.slug)
       .eq('active', true)
       .maybeSingle()
@@ -16,7 +16,7 @@ export const Route = createFileRoute('/produto/$slug')({
 
     const { data: related } = await supabase
       .from('products')
-      .select('id,title,slug,price,store_name,badge,images')
+      .select('id,title,slug,price,original_price,discount_percent,store_name,badge,images')
       .eq('category_id', product.category_id)
       .eq('active', true)
       .neq('id', product.id)
@@ -103,7 +103,13 @@ function Page() {
               </ul>
             )}
 
-            <strong className="price">{money(product.price)}</strong>
+            <div className="product-offer-price">
+              {product.discount_percent > 0 && product.original_price != null && <del>{money(product.original_price)}</del>}
+              <div>
+                <strong className="price">{money(product.price)}</strong>
+                {product.discount_percent > 0 && <span className="product-discount-pill">-{product.discount_percent}%</span>}
+              </div>
+            </div>
             <p className="muted">Loja parceira: {product.store_name}</p>
             {product.verified_at && (
               <p className="verified-date">
@@ -139,11 +145,15 @@ function Page() {
                       ? <img src={item.images[0]} alt={item.title} />
                       : <div className="product-placeholder">HIPERGIGA</div>}
                     {item.badge && <span>{item.badge}</span>}
+                    {item.discount_percent > 0 && <i className="hg-discount-badge">-{item.discount_percent}%</i>}
                   </a>
                   <div className="hg-product-info">
                     <small>{item.store_name}</small>
                     <h3>{item.title}</h3>
-                    <strong>{money(item.price)}</strong>
+                    <div className="hg-price-stack">
+                      {item.original_price != null && item.discount_percent > 0 && <del>{money(item.original_price)}</del>}
+                      <strong>{money(item.price)}</strong>
+                    </div>
                     <a className="hg-product-btn" href={'/produto/' + item.slug}>Ver produto →</a>
                   </div>
                 </article>
