@@ -4,8 +4,6 @@ import { supabase } from '../lib/supabase'
 
 export const Route = createFileRoute('/auth')({ component: Auth })
 
-const ADMIN_EMAIL = 'demontiez1975@gmail.com'
-
 function Auth() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -48,36 +46,13 @@ function Auth() {
       password,
     })
 
-    if (!error && data.user) {
-      await finishAdminLogin(data.user.id)
-      setLoading(false)
-      return
-    }
-
-    if (normalizedEmail !== ADMIN_EMAIL) {
+    if (error || !data.user) {
       setMessage('E-mail ou senha inválidos.')
       setLoading(false)
       return
     }
 
-    const { data: signupData, error: signupError } = await supabase.auth.signUp({
-      email: normalizedEmail,
-      password,
-    })
-
-    if (signupError || !signupData.user) {
-      setMessage(signupError?.message || 'Não foi possível criar o primeiro acesso.')
-      setLoading(false)
-      return
-    }
-
-    if (!signupData.session) {
-      setMessage('Primeiro acesso criado. Verifique seu e-mail para confirmar a conta e depois entre novamente.')
-      setLoading(false)
-      return
-    }
-
-    await finishAdminLogin(signupData.user.id)
+    await finishAdminLogin(data.user.id)
     setLoading(false)
   }
 
