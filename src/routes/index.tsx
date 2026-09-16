@@ -7,6 +7,7 @@ type Category = {
   name: string
   slug: string
   description: string | null
+  image_url: string | null
 }
 
 type Product = {
@@ -17,6 +18,7 @@ type Product = {
   store_name: string
   badge: string | null
   category_id: string | null
+  images: string[]
 }
 
 type Article = {
@@ -36,12 +38,12 @@ export const Route = createFileRoute('/')({
     ] = await Promise.all([
       supabase
         .from('categories')
-        .select('id,name,slug,description')
+        .select('id,name,slug,description,image_url')
         .eq('active', true)
         .order('sort_order'),
       supabase
         .from('products')
-        .select('id,title,slug,price,store_name,badge,category_id')
+        .select('id,title,slug,price,store_name,badge,category_id,images')
         .eq('active', true)
         .order('featured', { ascending: false })
         .order('verified_at', { ascending: false })
@@ -231,7 +233,7 @@ function Home() {
                 key={category.id}
               >
                 <img
-                  src={categoryPhotos[category.slug] || categoryPhotos.cozinha}
+                  src={category.image_url || categoryPhotos[category.slug] || categoryPhotos.cozinha}
                   alt={category.name}
                 />
                 <div>
@@ -262,7 +264,7 @@ function Home() {
                   href={'/produto/' + product.slug}
                 >
                   <img
-                    src={productPhotos[index % productPhotos.length]}
+                    src={product.images?.[0] || productPhotos[index % productPhotos.length]}
                     alt={product.title}
                   />
                   {product.badge && <span>{product.badge}</span>}
@@ -330,7 +332,7 @@ function Home() {
                 key={article.id}
               >
                 <img
-                  src={articlePhotos[index % articlePhotos.length]}
+                  src={article.cover_image_url || articlePhotos[index % articlePhotos.length]}
                   alt={article.title}
                 />
                 <div>
