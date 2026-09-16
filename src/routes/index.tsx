@@ -94,8 +94,8 @@ function Home(){
         </div>
 
         <div className="hg-hero-photo">
-          <img src="https://images.unsplash.com/photo-1556911220-e15b29be8c8f?auto=format&fit=crop&w=1400&q=88" alt="Cozinha organizada e acolhedora"/>
-          <div className="hg-hero-note">Pequenas escolhas,<br/>grandes mudanças ♥</div>
+          <img src="https://images.unsplash.com/photo-1768875845344-5663fa9acf15?auto=format&fit=crop&w=1600&q=88" alt="Cozinha organizada e acolhedora"/>
+          <div className="hg-hero-note">Pequenas escolhas,<br/>grandes mudanças ♥</div><div className="hg-photo-card"><span>⌂</span><div><b>Organização também é qualidade de vida.</b><small>Ideias simples para uma rotina mais leve.</small></div></div>
         </div>
       </div>
     </section>
