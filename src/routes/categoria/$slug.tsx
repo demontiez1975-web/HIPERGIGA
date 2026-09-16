@@ -15,7 +15,7 @@ export const Route = createFileRoute('/categoria/$slug')({
 
     const { data: products, error: productsError } = await supabase
       .from('products')
-      .select('id,title,slug,store_name,badge,price,images')
+      .select('id,title,slug,store_name,badge,price,images,affiliate_url')
       .eq('category_id', category.id)
       .eq('active', true)
       .order('featured', { ascending: false })
@@ -35,6 +35,25 @@ function money(value: number | null) {
 
 function Page() {
   const { category, products } = Route.useLoaderData()
+
+  function trackOffer(product: { id:string; store_name:string; affiliate_url:string }) {
+    if (typeof window === 'undefined') return
+
+    const params = new URLSearchParams(window.location.search)
+
+    void supabase.from('affiliate_clicks').insert({
+      product_id: product.id,
+      store_name: product.store_name,
+      source: 'category_page',
+      utm_source: params.get('utm_source'),
+      utm_medium: params.get('utm_medium'),
+      utm_campaign: params.get('utm_campaign'),
+      utm_content: params.get('utm_content'),
+      utm_term: params.get('utm_term'),
+      referrer: document.referrer || null,
+      page_url: window.location.href,
+    })
+  }
 
   if (!category) {
     return <main className="page"><div className="wrap"><h1>Categoria não encontrada</h1></div></main>
@@ -65,7 +84,15 @@ function Page() {
                 <small>{product.store_name}</small>
                 <h3>{product.title}</h3>
                 <strong>{money(product.price)}</strong>
-                <a className="hg-product-btn" href={'/produto/' + product.slug}>Ver produto →</a>
+                <a
+                  className="hg-product-btn"
+                  href={product.affiliate_url}
+                  target="_blank"
+                  rel="sponsored noopener noreferrer"
+                  onClick={() => trackOffer(product)}
+                >
+                  Ver na loja →
+                </a>
               </div>
             </article>
           ))}
