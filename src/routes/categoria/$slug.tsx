@@ -15,7 +15,7 @@ export const Route = createFileRoute('/categoria/$slug')({
 
     const { data: products, error: productsError } = await supabase
       .from('products')
-      .select('id,title,slug,store_name,badge,price,images,affiliate_url')
+      .select('id,title,slug,store_name,badge,price,original_price,discount_percent,images,affiliate_url')
       .eq('category_id', category.id)
       .eq('active', true)
       .order('featured', { ascending: false })
@@ -79,11 +79,15 @@ function Page() {
                   ? <img src={product.images[0]} alt={product.title} />
                   : <div className="product-placeholder">HIPERGIGA</div>}
                 {product.badge && <span>{product.badge}</span>}
+                {product.discount_percent > 0 && <i className="hg-discount-badge">-{product.discount_percent}%</i>}
               </a>
               <div className="hg-product-info">
                 <small>{product.store_name}</small>
                 <h3>{product.title}</h3>
-                <strong>{money(product.price)}</strong>
+                <div className="hg-price-stack">
+                  {product.original_price != null && product.discount_percent > 0 && <del>{money(product.original_price)}</del>}
+                  <strong>{money(product.price)}</strong>
+                </div>
                 <a
                   className="hg-product-btn"
                   href={product.affiliate_url}
