@@ -1,4 +1,4 @@
-import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react'
+import { ChangeEvent, FormEvent, useCallback, useEffect, useMemo, useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { supabase } from '../../lib/supabase'
 
@@ -9,6 +9,7 @@ type Category = {
   name: string
   slug: string
   description: string | null
+  image_url: string | null
   sort_order: number
   active: boolean
 }
@@ -20,6 +21,7 @@ type Product = {
   slug: string
   description: string | null
   benefits: unknown
+  images: string[]
   price: number | null
   store_name: string
   affiliate_url: string
@@ -47,6 +49,7 @@ const emptyProduct = {
   slug: '',
   description: '',
   benefits: '',
+  images: [] as string[],
   price: '',
   store_name: '',
   affiliate_url: '',
@@ -60,6 +63,7 @@ const emptyCategory = {
   name: '',
   slug: '',
   description: '',
+  image_url: '',
   sort_order: '0',
   active: true,
 }
@@ -74,6 +78,15 @@ const emptyArticle = {
   published: false,
 }
 
+function safeName(name: string) {
+  return name
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9.]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
 function Admin() {
   const [authorized, setAuthorized] = useState<boolean | null>(null)
   const [tab, setTab] = useState<Tab>('dashboard')
@@ -84,6 +97,7 @@ function Admin() {
   const [clicks7Days, setClicks7Days] = useState(0)
   const [subscribers, setSubscribers] = useState(0)
   const [message, setMessage] = useState('')
+  const [uploading, setUploading] = useState(false)
   const [productForm, setProductForm] = useState({ ...emptyProduct })
   const [categoryForm, setCategoryForm] = useState({ ...emptyCategory })
   const [articleForm, setArticleForm] = useState({ ...emptyArticle })
@@ -101,9 +115,18 @@ function Admin() {
       clicks7DaysResult,
       subscribersResult,
     ] = await Promise.all([
-      supabase.from('categories').select('id,name,slug,description,sort_order,active').order('sort_order'),
-      supabase.from('products').select('id,category_id,title,slug,description,benefits,price,store_name,affiliate_url,featured,badge,active').order('created_at', { ascending: false }),
-      supabase.from('articles').select('id,title,slug,summary,content,cover_image_url,published').order('created_at', { ascending: false }),
+      supabase
+        .from('categories')
+        .select('id,name,slug,description,image_url,sort_order,active')
+        .order('sort_order'),
+      supabase
+        .from('products')
+        .select('id,category_id,title,slug,description,benefits,images,price,store_name,affiliate_url,featured,badge,active')
+        .order('created_at', { ascending: false }),
+      supabase
+        .from('articles')
+        .select('id,title,slug,summary,content,cover_image_url,published')
+        .order('created_at', { ascending: false }),
       supabase.from('affiliate_clicks').select('*', { count: 'exact', head: true }).gte('clicked_at', startToday),
       supabase.from('affiliate_clicks').select('*', { count: 'exact', head: true }).gte('clicked_at', start7Days),
       supabase.from('newsletter_subscribers').select('*', { count: 'exact', head: true }),
@@ -166,6 +189,94 @@ function Admin() {
     if (typeof window !== 'undefined') window.location.href = '/auth'
   }
 
+  async function uploadImage(file: File, folder: string) {
+    if (!file.type.startsWith('image/')) throw new Error('Selecione apenas arquivos de imagem.')
+    if (file.size > 5 * 1024 * 1024) throw new Error('A imagem deve ter no máximo 5 MB.')
+
+    const ext = file.name.includes('.') ? file.name.split('.').pop() : 'jpg'
+    const base = safeName(file.name.replace(/\.[^.]+$/, '')) || 'imagem'
+    const path = `${folder}/${Date.now()}-${base}.${ext}`
+
+    const { error } = await supabase.storage
+      .from('hipergiga-media')
+      .upload(path, file, {
+        cacheControl: '3600',
+        upsert: false,
+      })
+
+    if (error) throw error
+
+    const { data } = supabase.storage.from('hipergiga-media').getPublicUrl(path)
+    return data.publicUrl
+  }
+
+  async function uploadProductImages(event: ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(event.target.files ?? [])
+    if (!files.length) return
+
+    setUploading(true)
+    setMessage('Enviando imagens...')
+
+    try {
+      const remaining = Math.max(0, 6 - productForm.images.length)
+      const selected = files.slice(0, remaining)
+      const urls = []
+
+      for (const file of selected) {
+        urls.push(await uploadImage(file, 'products'))
+      }
+
+      setProductForm(current => ({
+        ...current,
+        images: [...current.images, ...urls],
+      }))
+      setMessage(`${urls.length} imagem(ns) enviada(s).`)
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Falha no upload.')
+    } finally {
+      setUploading(false)
+      event.target.value = ''
+    }
+  }
+
+  async function uploadCategoryImage(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    setUploading(true)
+    setMessage('Enviando imagem...')
+
+    try {
+      const url = await uploadImage(file, 'categories')
+      setCategoryForm(current => ({ ...current, image_url: url }))
+      setMessage('Imagem da categoria enviada.')
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Falha no upload.')
+    } finally {
+      setUploading(false)
+      event.target.value = ''
+    }
+  }
+
+  async function uploadArticleImage(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    setUploading(true)
+    setMessage('Enviando capa...')
+
+    try {
+      const url = await uploadImage(file, 'articles')
+      setArticleForm(current => ({ ...current, cover_image_url: url }))
+      setMessage('Capa enviada.')
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Falha no upload.')
+    } finally {
+      setUploading(false)
+      event.target.value = ''
+    }
+  }
+
   async function saveProduct(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setMessage('')
@@ -181,6 +292,7 @@ function Admin() {
       slug: productForm.slug.trim(),
       description: productForm.description.trim() || null,
       benefits,
+      images: productForm.images,
       price: productForm.price ? Number(productForm.price.replace(',', '.')) : null,
       store_name: productForm.store_name.trim(),
       affiliate_url: productForm.affiliate_url.trim(),
@@ -213,6 +325,7 @@ function Admin() {
       name: categoryForm.name.trim(),
       slug: categoryForm.slug.trim(),
       description: categoryForm.description.trim() || null,
+      image_url: categoryForm.image_url.trim() || null,
       sort_order: Number(categoryForm.sort_order || 0),
       active: categoryForm.active,
     }
@@ -286,6 +399,7 @@ function Admin() {
       slug: product.slug,
       description: product.description ?? '',
       benefits,
+      images: Array.isArray(product.images) ? product.images : [],
       price: product.price?.toString() ?? '',
       store_name: product.store_name,
       affiliate_url: product.affiliate_url,
@@ -345,30 +459,78 @@ function Admin() {
             <form className="admin-card admin-form" onSubmit={saveProduct}>
               <h2>{productForm.id ? 'Editar produto' : 'Novo produto'}</h2>
 
-              <label>Categoria<select value={productForm.category_id} onChange={event => setProductForm({ ...productForm, category_id: event.target.value })}><option value="">Sem categoria</option>{categories.map(category => <option key={category.id} value={category.id}>{category.name}</option>)}</select></label>
+              <label>
+                Categoria
+                <select value={productForm.category_id} onChange={event => setProductForm({ ...productForm, category_id: event.target.value })}>
+                  <option value="">Sem categoria</option>
+                  {categories.map(category => <option key={category.id} value={category.id}>{category.name}</option>)}
+                </select>
+              </label>
+
               <label>Título<input value={productForm.title} onChange={event => setProductForm({ ...productForm, title: event.target.value })} required /></label>
               <label>Slug<input value={productForm.slug} onChange={event => setProductForm({ ...productForm, slug: event.target.value })} required /></label>
               <label>Descrição<textarea value={productForm.description} onChange={event => setProductForm({ ...productForm, description: event.target.value })} /></label>
               <label>Benefícios <small>um por linha</small><textarea value={productForm.benefits} onChange={event => setProductForm({ ...productForm, benefits: event.target.value })} /></label>
+
+              <div className="admin-upload-box">
+                <div>
+                  <b>Fotos do produto</b>
+                  <small>Até 6 imagens. JPG, PNG, WEBP ou GIF, até 5 MB cada.</small>
+                </div>
+                <label className="btn ghost admin-file-btn">
+                  {uploading ? 'Enviando...' : 'Carregar imagens'}
+                  <input type="file" accept="image/*" multiple onChange={uploadProductImages} disabled={uploading || productForm.images.length >= 6} />
+                </label>
+              </div>
+
+              {productForm.images.length > 0 && (
+                <div className="admin-image-grid">
+                  {productForm.images.map((url, index) => (
+                    <div className="admin-image-thumb" key={url + index}>
+                      <img src={url} alt={'Produto ' + (index + 1)} />
+                      {index === 0 && <span>Principal</span>}
+                      <button type="button" onClick={() => setProductForm(current => ({ ...current, images: current.images.filter((_, i) => i !== index) }))}>×</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <div className="form-row">
                 <label>Preço<input inputMode="decimal" value={productForm.price} onChange={event => setProductForm({ ...productForm, price: event.target.value })} /></label>
-                <label>Selo<input value={productForm.badge} onChange={event => setProductForm({ ...productForm, badge: event.target.value })} /></label>
+                <label>Selo<input value={productForm.badge} onChange={event => setProductForm({ ...productForm, badge: event.target.value })} placeholder="Mais vendido" /></label>
               </div>
-              <label>Loja parceira<input value={productForm.store_name} onChange={event => setProductForm({ ...productForm, store_name: event.target.value })} required /></label>
-              <label>Link de afiliado<input type="url" value={productForm.affiliate_url} onChange={event => setProductForm({ ...productForm, affiliate_url: event.target.value })} required /></label>
+
+              <label>Loja parceira<input value={productForm.store_name} onChange={event => setProductForm({ ...productForm, store_name: event.target.value })} placeholder="Amazon, Mercado Livre, Shopee..." required /></label>
+              <label>Link da oferta / afiliado<input type="url" value={productForm.affiliate_url} onChange={event => setProductForm({ ...productForm, affiliate_url: event.target.value })} placeholder="https://..." required /></label>
+
               <div className="check-row">
                 <label><input type="checkbox" checked={productForm.featured} onChange={event => setProductForm({ ...productForm, featured: event.target.checked })} /> Destaque</label>
                 <label><input type="checkbox" checked={productForm.active} onChange={event => setProductForm({ ...productForm, active: event.target.checked })} /> Ativo</label>
               </div>
+
               <div className="form-actions">
-                <button className="btn primary" type="submit">{productForm.id ? 'Salvar alterações' : 'Criar produto'}</button>
+                <button className="btn primary" type="submit" disabled={uploading}>{productForm.id ? 'Salvar alterações' : 'Criar produto'}</button>
                 {productForm.id && <button className="btn ghost" type="button" onClick={() => setProductForm({ ...emptyProduct })}>Cancelar</button>}
               </div>
             </form>
 
             <div className="admin-card admin-list">
               <h2>Produtos cadastrados</h2>
-              {products.map(product => <div className="admin-list-row" key={product.id}><div><b>{product.title}</b><small>{categoryName.get(product.category_id ?? '') ?? 'Sem categoria'} · {product.store_name}</small></div><div className="row-actions"><button onClick={() => editProduct(product)}>Editar</button><button className="danger" onClick={() => removeRow('products', product.id)}>Excluir</button></div></div>)}
+              {products.map(product => (
+                <div className="admin-list-row" key={product.id}>
+                  <div className="admin-list-item">
+                    {product.images?.[0] && <img src={product.images[0]} alt="" />}
+                    <div>
+                      <b>{product.title}</b>
+                      <small>{categoryName.get(product.category_id ?? '') ?? 'Sem categoria'} · {product.store_name}</small>
+                    </div>
+                  </div>
+                  <div className="row-actions">
+                    <button onClick={() => editProduct(product)}>Editar</button>
+                    <button className="danger" onClick={() => removeRow('products', product.id)}>Excluir</button>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}
@@ -380,17 +542,62 @@ function Admin() {
               <label>Nome<input value={categoryForm.name} onChange={event => setCategoryForm({ ...categoryForm, name: event.target.value })} required /></label>
               <label>Slug<input value={categoryForm.slug} onChange={event => setCategoryForm({ ...categoryForm, slug: event.target.value })} required /></label>
               <label>Descrição<textarea value={categoryForm.description} onChange={event => setCategoryForm({ ...categoryForm, description: event.target.value })} /></label>
+
+              <div className="admin-upload-box">
+                <div>
+                  <b>Imagem da categoria</b>
+                  <small>Imagem exibida nos cards da Home.</small>
+                </div>
+                <label className="btn ghost admin-file-btn">
+                  {uploading ? 'Enviando...' : 'Carregar imagem'}
+                  <input type="file" accept="image/*" onChange={uploadCategoryImage} disabled={uploading} />
+                </label>
+              </div>
+
+              {categoryForm.image_url && (
+                <div className="admin-single-preview">
+                  <img src={categoryForm.image_url} alt="Categoria" />
+                  <button type="button" onClick={() => setCategoryForm({ ...categoryForm, image_url: '' })}>Remover</button>
+                </div>
+              )}
+
               <label>Ordem<input type="number" value={categoryForm.sort_order} onChange={event => setCategoryForm({ ...categoryForm, sort_order: event.target.value })} /></label>
               <label className="inline-check"><input type="checkbox" checked={categoryForm.active} onChange={event => setCategoryForm({ ...categoryForm, active: event.target.checked })} /> Ativa</label>
+
               <div className="form-actions">
-                <button className="btn primary" type="submit">{categoryForm.id ? 'Salvar alterações' : 'Criar categoria'}</button>
+                <button className="btn primary" type="submit" disabled={uploading}>{categoryForm.id ? 'Salvar alterações' : 'Criar categoria'}</button>
                 {categoryForm.id && <button className="btn ghost" type="button" onClick={() => setCategoryForm({ ...emptyCategory })}>Cancelar</button>}
               </div>
             </form>
 
             <div className="admin-card admin-list">
               <h2>Categorias</h2>
-              {categories.map(category => <div className="admin-list-row" key={category.id}><div><b>{category.name}</b><small>/{category.slug} · ordem {category.sort_order}</small></div><div className="row-actions"><button onClick={() => { setCategoryForm({ id: category.id, name: category.name, slug: category.slug, description: category.description ?? '', sort_order: String(category.sort_order), active: category.active }); setTab('categories') }}>Editar</button><button className="danger" onClick={() => removeRow('categories', category.id)}>Excluir</button></div></div>)}
+              {categories.map(category => (
+                <div className="admin-list-row" key={category.id}>
+                  <div className="admin-list-item">
+                    {category.image_url && <img src={category.image_url} alt="" />}
+                    <div>
+                      <b>{category.name}</b>
+                      <small>/{category.slug} · ordem {category.sort_order}</small>
+                    </div>
+                  </div>
+                  <div className="row-actions">
+                    <button onClick={() => {
+                      setCategoryForm({
+                        id: category.id,
+                        name: category.name,
+                        slug: category.slug,
+                        description: category.description ?? '',
+                        image_url: category.image_url ?? '',
+                        sort_order: String(category.sort_order),
+                        active: category.active,
+                      })
+                      setTab('categories')
+                    }}>Editar</button>
+                    <button className="danger" onClick={() => removeRow('categories', category.id)}>Excluir</button>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}
@@ -403,17 +610,61 @@ function Admin() {
               <label>Slug<input value={articleForm.slug} onChange={event => setArticleForm({ ...articleForm, slug: event.target.value })} required /></label>
               <label>Resumo<textarea value={articleForm.summary} onChange={event => setArticleForm({ ...articleForm, summary: event.target.value })} /></label>
               <label>Conteúdo<textarea className="large-textarea" value={articleForm.content} onChange={event => setArticleForm({ ...articleForm, content: event.target.value })} /></label>
-              <label>URL da capa<input type="url" value={articleForm.cover_image_url} onChange={event => setArticleForm({ ...articleForm, cover_image_url: event.target.value })} /></label>
+
+              <div className="admin-upload-box">
+                <div>
+                  <b>Capa do artigo</b>
+                  <small>Imagem principal do conteúdo.</small>
+                </div>
+                <label className="btn ghost admin-file-btn">
+                  {uploading ? 'Enviando...' : 'Carregar capa'}
+                  <input type="file" accept="image/*" onChange={uploadArticleImage} disabled={uploading} />
+                </label>
+              </div>
+
+              {articleForm.cover_image_url && (
+                <div className="admin-single-preview">
+                  <img src={articleForm.cover_image_url} alt="Capa" />
+                  <button type="button" onClick={() => setArticleForm({ ...articleForm, cover_image_url: '' })}>Remover</button>
+                </div>
+              )}
+
               <label className="inline-check"><input type="checkbox" checked={articleForm.published} onChange={event => setArticleForm({ ...articleForm, published: event.target.checked })} /> Publicado</label>
+
               <div className="form-actions">
-                <button className="btn primary" type="submit">{articleForm.id ? 'Salvar alterações' : 'Criar artigo'}</button>
+                <button className="btn primary" type="submit" disabled={uploading}>{articleForm.id ? 'Salvar alterações' : 'Criar artigo'}</button>
                 {articleForm.id && <button className="btn ghost" type="button" onClick={() => setArticleForm({ ...emptyArticle })}>Cancelar</button>}
               </div>
             </form>
 
             <div className="admin-card admin-list">
               <h2>Artigos</h2>
-              {articles.map(article => <div className="admin-list-row" key={article.id}><div><b>{article.title}</b><small>{article.published ? 'Publicado' : 'Rascunho'}</small></div><div className="row-actions"><button onClick={() => { setArticleForm({ id: article.id, title: article.title, slug: article.slug, summary: article.summary ?? '', content: article.content ?? '', cover_image_url: article.cover_image_url ?? '', published: article.published }); setTab('articles') }}>Editar</button><button className="danger" onClick={() => removeRow('articles', article.id)}>Excluir</button></div></div>)}
+              {articles.map(article => (
+                <div className="admin-list-row" key={article.id}>
+                  <div className="admin-list-item">
+                    {article.cover_image_url && <img src={article.cover_image_url} alt="" />}
+                    <div>
+                      <b>{article.title}</b>
+                      <small>{article.published ? 'Publicado' : 'Rascunho'}</small>
+                    </div>
+                  </div>
+                  <div className="row-actions">
+                    <button onClick={() => {
+                      setArticleForm({
+                        id: article.id,
+                        title: article.title,
+                        slug: article.slug,
+                        summary: article.summary ?? '',
+                        content: article.content ?? '',
+                        cover_image_url: article.cover_image_url ?? '',
+                        published: article.published,
+                      })
+                      setTab('articles')
+                    }}>Editar</button>
+                    <button className="danger" onClick={() => removeRow('articles', article.id)}>Excluir</button>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}
