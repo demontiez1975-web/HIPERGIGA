@@ -139,3 +139,206 @@
   .hg-about-grid h2{font-size:10vw}
   .hg-disclosure .hg-wrap{gap:5px}
 }
+
+/* mobile hero correction v4 */
+@media(max-width:900px){
+  .hg-header .hg-wrap{width:min(100% - 18px,1240px)}
+  .hg-nav{height:66px;justify-content:center}
+  .hg-logo-link img{width:170px}
+  .hg-menu,.hg-search,.hg-cta{display:none!important}
+  .hg-mobile-menu,.hg-mobile-search{display:grid!important}
+  .hg-mobile-menu{left:0}
+  .hg-mobile-search{right:0}
+
+  .hg-hero-grid{
+    width:min(100% - 20px,1240px);
+    max-width:1240px;
+    margin:auto;
+    display:flex!important;
+    flex-direction:column!important;
+    min-height:0!important;
+    overflow:visible!important;
+  }
+
+  .hg-hero-copy{
+    order:1;
+    position:relative!important;
+    width:100%!important;
+    min-height:0!important;
+    padding:38px 0 28px!important;
+    z-index:2;
+  }
+
+  .hg-hero-copy h1{
+    font-size:clamp(2.9rem,10vw,4.2rem)!important;
+    line-height:.98!important;
+    max-width:620px!important;
+    margin:12px 0 16px!important;
+  }
+
+  .hg-hero-copy>p{
+    max-width:620px!important;
+    font-size:14px!important;
+    line-height:1.6!important;
+  }
+
+  .hg-hero-actions{
+    display:flex!important;
+    flex-direction:row!important;
+    flex-wrap:wrap!important;
+    gap:10px!important;
+  }
+
+  .hg-btn{
+    min-width:0!important;
+    padding:0 18px!important;
+  }
+
+  .hg-trust-row{
+    display:grid!important;
+    grid-template-columns:repeat(3,1fr)!important;
+    gap:10px!important;
+    max-width:620px!important;
+  }
+
+  .hg-hero-photo{
+    order:2;
+    position:relative!important;
+    inset:auto!important;
+    width:100%!important;
+    height:390px!important;
+    min-height:390px!important;
+    margin:0 0 28px!important;
+    border-radius:22px!important;
+    overflow:hidden!important;
+  }
+
+  .hg-hero-photo img{
+    width:100%!important;
+    height:100%!important;
+    min-height:0!important;
+    object-fit:cover!important;
+    object-position:center 32%!important;
+  }
+
+  .hg-hero-photo:before{
+    content:""!important;
+    position:absolute!important;
+    inset:0!important;
+    z-index:1!important;
+    background:linear-gradient(180deg,rgba(255,255,255,0) 52%,rgba(7,90,90,.12) 100%)!important;
+  }
+
+  .hg-hero-note{
+    z-index:2!important;
+    top:22px!important;
+    right:18px!important;
+    max-width:170px!important;
+    font-size:16px!important;
+  }
+
+  .hg-photo-card{
+    display:flex!important;
+    z-index:2!important;
+    right:14px!important;
+    bottom:14px!important;
+    max-width:235px!important;
+  }
+}
+
+@media(max-width:560px){
+  body{padding-bottom:68px}
+  .hg-nav{height:62px}
+  .hg-logo-link img{width:155px}
+  .hg-mobile-menu,.hg-mobile-search{top:11px!important}
+
+  .hg-hero-copy{
+    padding:28px 0 22px!important;
+  }
+
+  .hg-kicker{
+    font-size:8px!important;
+    letter-spacing:.18em!important;
+  }
+
+  .hg-hero-copy h1{
+    font-size:clamp(2.45rem,12.5vw,3.35rem)!important;
+    line-height:.97!important;
+    max-width:100%!important;
+  }
+
+  .hg-hero-copy>p{
+    font-size:13px!important;
+    line-height:1.55!important;
+  }
+
+  .hg-hero-actions{
+    display:grid!important;
+    grid-template-columns:1fr!important;
+    gap:8px!important;
+  }
+
+  .hg-btn{
+    width:100%!important;
+    min-height:48px!important;
+  }
+
+  .hg-trust-row{
+    grid-template-columns:repeat(3,1fr)!important;
+    gap:6px!important;
+    margin-top:4px!important;
+  }
+
+  .hg-trust-row>div{
+    min-width:0!important;
+    text-align:center!important;
+  }
+
+  .hg-trust-row span{
+    margin:0 auto 5px!important;
+  }
+
+  .hg-trust-row b{
+    display:block!important;
+    font-size:8px!important;
+    line-height:1.25!important;
+  }
+
+  .hg-trust-row small{display:none!important}
+
+  .hg-hero-photo{
+    height:300px!important;
+    min-height:300px!important;
+    border-radius:18px!important;
+    margin-bottom:22px!important;
+  }
+
+  .hg-hero-photo img{
+    object-position:center 30%!important;
+  }
+
+  .hg-hero-note{
+    top:16px!important;
+    right:12px!important;
+    max-width:135px!important;
+    font-size:12px!important;
+  }
+
+  .hg-photo-card{
+    right:10px!important;
+    bottom:10px!important;
+    max-width:205px!important;
+    padding:10px!important;
+  }
+
+  .hg-photo-card b{
+    font-size:10px!important;
+  }
+
+  .hg-photo-card small{display:none!important}
+
+  .hg-category-card{min-width:158px!important}
+  .hg-product-card{min-width:205px!important}
+  .hg-product-image img{height:145px!important}
+  .hg-section-head h2{font-size:21px!important}
+}
