@@ -43,6 +43,7 @@ function Header(){
         <a className="hg-logo-link" href="/" aria-label="HIPERGIGA">
           <img src="/hipergiga-logo.svg" alt="HIPERGIGA"/>
         </a>
+        <AdminAccess mobile/>
 
         <nav className="hg-menu">
           <a href="/#categorias">Categorias</a>
@@ -65,7 +66,7 @@ function Header(){
   )
 }
 
-function AdminAccess(){
+function AdminAccess({ mobile = false }: { mobile?: boolean }){
   const [isAdmin, setIsAdmin] = useState(false)
 
   useEffect(() => {
@@ -92,9 +93,17 @@ function AdminAccess(){
     }
   }, [])
 
-  if (!isAdmin) return null
+  const href = isAdmin ? '/admin' : '/auth'
+  const label = isAdmin ? (mobile ? 'Admin' : '⚙ Painel Admin') : (mobile ? 'Entrar' : 'Entrar')
 
-  return <a className="hg-admin-access" href="/admin">⚙ Painel Admin</a>
+  return (
+    <a
+      className={mobile ? 'hg-admin-access hg-mobile-admin-access' : 'hg-admin-access'}
+      href={href}
+    >
+      {label}
+    </a>
+  )
 }
 
 function Footer(){
