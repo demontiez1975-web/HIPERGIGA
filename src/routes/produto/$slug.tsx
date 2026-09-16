@@ -1,4 +1,4 @@
-import { MouseEvent } from 'react'
+import { MouseEvent, useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { supabase } from '../../lib/supabase'
 
@@ -16,7 +16,7 @@ export const Route = createFileRoute('/produto/$slug')({
 
     const { data: related } = await supabase
       .from('products')
-      .select('id,title,slug,price,store_name,badge')
+      .select('id,title,slug,price,store_name,badge,images')
       .eq('category_id', product.category_id)
       .eq('active', true)
       .neq('id', product.id)
@@ -27,24 +27,34 @@ export const Route = createFileRoute('/produto/$slug')({
   component: Page,
 })
 
+function money(value: number | null) {
+  if (value == null) return 'Consultar oferta'
+  return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+}
+
 function Page() {
-  const { product: p, related } = Route.useLoaderData()
+  const { product: product, related } = Route.useLoaderData()
+  const images = product?.images ?? []
+  const [selectedImage, setSelectedImage] = useState(images[0] ?? '')
 
-  if (!p) return <main className="page"><div className="wrap"><h1>Produto não encontrado</h1></div></main>
+  if (!product) {
+    return <main className="page"><div className="wrap"><h1>Produto não encontrado</h1></div></main>
+  }
 
-  const benefits = Array.isArray(p.benefits) ? p.benefits.filter((x): x is string => typeof x === 'string') : []
+  const benefits = Array.isArray(product.benefits)
+    ? product.benefits.filter((item): item is string => typeof item === 'string')
+    : []
 
   async function handleOfferClick(event: MouseEvent<HTMLAnchorElement>) {
     event.preventDefault()
 
-    const target = p.affiliate_url
     const pageUrl = typeof window !== 'undefined' ? window.location.href : null
     const referrer = typeof document !== 'undefined' ? document.referrer || null : null
     const params = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null
 
     const insertPromise = supabase.from('affiliate_clicks').insert({
-      product_id: p.id,
-      store_name: p.store_name,
+      product_id: product.id,
+      store_name: product.store_name,
       source: 'product_page',
       utm_source: params?.get('utm_source'),
       utm_medium: params?.get('utm_medium'),
@@ -59,24 +69,98 @@ function Page() {
     await Promise.race([insertPromise, timeout])
 
     if (typeof window !== 'undefined') {
-      window.open(target, '_blank', 'noopener,noreferrer')
+      window.open(product.affiliate_url, '_blank', 'noopener,noreferrer')
     }
   }
 
-  return <main className="page"><div className="wrap">
-    <div className="detail">
-      <div className="detail-visual">🏡</div>
-      <div>
-        {p.badge && <span className="eyebrow coral">{p.badge}</span>}
-        <h1>{p.title}</h1>
-        <p>{p.description}</p>
-        {benefits.length > 0 && <ul>{benefits.map(item => <li key={item}>{item}</li>)}</ul>}
-        <strong className="price">{p.price == null ? 'Consultar oferta' : p.price.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}</strong>
-        <p className="muted">Loja parceira: {p.store_name}</p>
-        <a className="btn accent big" href={p.affiliate_url} onClick={handleOfferClick} target="_blank" rel="sponsored noopener noreferrer">Ver oferta na loja</a>
-        <small className="disclosure">Podemos receber comissão por compras feitas por este link, sem custo adicional para você.</small>
+  return (
+    <main className="page product-page">
+      <div className="wrap">
+        <div className="product-detail">
+          <div className="product-gallery">
+            <div className="product-main-image">
+              {selectedImage
+                ? <img src={selectedImage} alt={product.title} />
+                : <div className="product-placeholder large">HIPERGIGA</div>}
+            </div>
+
+            {images.length > 1 && (
+              <div className="product-thumbs">
+                {images.map((url, index) => (
+                  <button
+                    type="button"
+                    key={url}
+                    className={selectedImage === url ? 'active' : ''}
+                    onClick={() => setSelectedImage(url)}
+                    aria-label={'Ver imagem ' + (index + 1)}
+                  >
+                    <img src={url} alt="" />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="product-detail-copy">
+            {product.badge && <span className="eyebrow coral">{product.badge}</span>}
+            <h1>{product.title}</h1>
+            <p>{product.description}</p>
+
+            {benefits.length > 0 && (
+              <ul className="product-benefits">
+                {benefits.map(item => <li key={item}>{item}</li>)}
+              </ul>
+            )}
+
+            <strong className="price">{money(product.price)}</strong>
+            <p className="muted">Loja parceira: {product.store_name}</p>
+            {product.verified_at && (
+              <p className="verified-date">
+                Oferta verificada em {new Date(product.verified_at).toLocaleDateString('pt-BR')}
+              </p>
+            )}
+
+            <a
+              className="btn accent big"
+              href={product.affiliate_url}
+              onClick={handleOfferClick}
+              target="_blank"
+              rel="sponsored noopener noreferrer"
+            >
+              Ver oferta na loja →
+            </a>
+
+            <small className="disclosure">
+              Podemos receber comissão por compras feitas por este link, sem custo adicional para você.
+            </small>
+          </div>
+        </div>
+
+        {related.length > 0 && (
+          <section className="related-section">
+            <span className="eyebrow">VOCÊ TAMBÉM PODE GOSTAR</span>
+            <h2>Produtos relacionados</h2>
+            <div className="hg-product-grid">
+              {related.map(item => (
+                <article className="hg-product-card" key={item.id}>
+                  <a className="hg-product-image" href={'/produto/' + item.slug}>
+                    {item.images?.[0]
+                      ? <img src={item.images[0]} alt={item.title} />
+                      : <div className="product-placeholder">HIPERGIGA</div>}
+                    {item.badge && <span>{item.badge}</span>}
+                  </a>
+                  <div className="hg-product-info">
+                    <small>{item.store_name}</small>
+                    <h3>{item.title}</h3>
+                    <strong>{money(item.price)}</strong>
+                    <a className="hg-product-btn" href={'/produto/' + item.slug}>Ver produto →</a>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+        )}
       </div>
-    </div>
-    {related.length > 0 && <section className="section"><span className="eyebrow">VOCÊ TAMBÉM PODE GOSTAR</span><div className="products">{related.map(r => <article className="product" key={r.id}><div className="product-body"><small>{r.store_name}</small><h3>{r.title}</h3><a className="btn primary" href={'/produto/' + r.slug}>Ver produto</a></div></article>)}</div></section>}
-  </div></main>
+    </main>
+  )
 }
