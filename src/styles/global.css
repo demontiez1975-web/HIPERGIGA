@@ -19,3 +19,34 @@
 @media(max-width:1050px){.hg-search{display:none}.hg-category-row{grid-template-columns:repeat(4,1fr)}.hg-product-grid{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:820px){.hg-menu{display:none}.hg-header-actions{margin-left:auto}.hg-hero-grid,.hg-benefit-layout,.hg-about-grid,.hg-newsletter-grid{grid-template-columns:1fr}.hg-hero-copy{padding-right:0}.hg-hero-photo{border-radius:22px;overflow:hidden;margin-bottom:24px}.hg-category-row{grid-template-columns:repeat(2,1fr)}.hg-product-grid{grid-template-columns:repeat(2,1fr)}.hg-benefit-cards{grid-template-columns:1fr}.hg-articles{grid-template-columns:1fr}.hg-footer-grid{grid-template-columns:1fr 1fr}.detail{grid-template-columns:1fr}.admin-shell{grid-template-columns:1fr}.admin-sidebar{position:relative;height:auto}.admin-grid{grid-template-columns:1fr}}
 @media(max-width:560px){.hg-wrap{width:min(100% - 22px,1240px)}.hg-nav{height:66px}.hg-logo-link img{width:165px}.hg-cta{padding:11px 14px;font-size:10px}.hg-hero-copy{padding:40px 0 28px}.hg-hero-copy h1{font-size:13vw}.hg-trust-row{gap:12px}.hg-hero-photo img{min-height:300px}.hg-hero-note{font-size:17px;right:18px;top:45px}.hg-section{padding:44px 0}.hg-section-head{display:block}.hg-section-head>a{display:inline-block;margin-top:8px}.hg-category-row{display:flex;overflow:auto;padding-bottom:5px}.hg-category-card{min-width:165px}.hg-product-grid{grid-template-columns:1fr 1fr;gap:9px}.hg-product-image img{height:150px}.hg-product-info{padding:10px}.hg-product-info h3{font-size:12px;min-height:32px}.hg-product-info strong{font-size:16px}.hg-product-btn{padding:9px 6px}.hg-benefit-layout h2{font-size:24px}.hg-about-grid>img{height:260px}.hg-about-grid h2{font-size:11vw}.hg-newsletter form{flex-direction:column}.hg-newsletter input,.hg-newsletter button{border-radius:10px;height:44px}.hg-footer-grid{grid-template-columns:1fr}.hg-disclosure .hg-wrap{align-items:flex-start;flex-direction:column}.metrics{grid-template-columns:1fr 1fr}.admin-nav{grid-template-columns:1fr 1fr}}
+
+/* refinamento visual do hero */
+.hg-topbar{background:var(--teal);color:#fff;font-size:10px}
+.hg-topbar-inner{min-height:34px;display:flex;align-items:center;gap:28px}
+.hg-topbar-inner b{margin-left:auto;font-weight:600}
+.hg-hero-grid{grid-template-columns:.92fr 1.08fr;min-height:485px}
+.hg-hero-copy{padding:52px 48px 48px 28px}
+.hg-hero-copy h1{font-size:clamp(3.15rem,5.1vw,4.9rem);line-height:.99;max-width:650px;margin:13px 0 18px}
+.hg-hero-copy>p{max-width:610px;font-size:14px}
+.hg-hero-photo img{min-height:485px}
+.hg-hero-photo:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(255,255,255,.08),transparent 35%,rgba(7,90,90,.03));pointer-events:none}
+.hg-hero-note{top:54px;right:28px;font-size:20px;z-index:2}
+.hg-photo-card{position:absolute;right:28px;bottom:26px;z-index:3;max-width:255px;background:rgba(255,255,255,.93);border:1px solid rgba(234,229,220,.95);border-radius:18px;padding:13px 15px;display:flex;gap:11px;align-items:flex-start;box-shadow:0 16px 34px rgba(36,51,51,.12);backdrop-filter:blur(8px)}
+.hg-photo-card>span{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:var(--cream);color:var(--coral);font-size:18px;flex:0 0 auto}
+.hg-photo-card b{display:block;font:700 12px/1.3 var(--head);color:var(--teal)}
+.hg-photo-card small{display:block;margin-top:4px;font-size:9px;line-height:1.4;color:var(--muted)}
+.hg-header{box-shadow:0 4px 18px rgba(36,51,51,.035)}
+.hg-logo-link img{width:195px}
+.hg-search{width:295px}
+@media(max-width:820px){
+  .hg-topbar-inner span:nth-child(2),.hg-topbar-inner span:nth-child(3),.hg-topbar-inner b{display:none}
+  .hg-topbar-inner{justify-content:center}
+  .hg-hero-copy{padding:42px 4px 28px}
+  .hg-hero-copy h1{font-size:clamp(3rem,11vw,4.6rem)}
+  .hg-photo-card{right:16px;bottom:16px}
+}
+@media(max-width:560px){
+  .hg-topbar{display:none}
+  .hg-photo-card{max-width:210px}
+  .hg-photo-card small{display:none}
+}
