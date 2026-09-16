@@ -36,6 +36,7 @@ function Header(){
       </div>
       <header className="hg-header">
       <div className="hg-wrap hg-nav">
+        <button className="hg-mobile-menu" aria-label="Abrir menu">☰</button>
         <a className="hg-logo-link" href="/" aria-label="HIPERGIGA">
           <img src="/hipergiga-logo.svg" alt="HIPERGIGA"/>
         </a>
@@ -48,6 +49,7 @@ function Header(){
         </nav>
 
         <div className="hg-header-actions">
+          <a className="hg-mobile-search" href="/#categorias" aria-label="Pesquisar">⌕</a>
           <div className="hg-search">
             <span>⌕</span>
             <input aria-label="Buscar" placeholder="O que você procura para o seu lar?"/>
@@ -86,6 +88,12 @@ function Footer(){
       </div>
       <div className="hg-wrap hg-footer-bottom">© 2026 HIPERGIGA. Todos os direitos reservados.</div>
     </footer>
+    <nav className="hg-mobile-bottom" aria-label="Navegação mobile">
+      <a href="/"><span>⌂</span><b>Início</b></a>
+      <a href="/#categorias"><span>▦</span><b>Categorias</b></a>
+      <a href="/#achadinhos"><span>♡</span><b>Achadinhos</b></a>
+      <a href="/#dicas"><span>☷</span><b>Dicas</b></a>
+    </nav>
   )
 }
 
