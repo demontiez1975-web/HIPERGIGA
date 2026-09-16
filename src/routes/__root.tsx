@@ -25,7 +25,16 @@ function Root() {
 
 function Header(){
   return (
-    <header className="hg-header">
+    <>
+      <div className="hg-topbar">
+        <div className="hg-wrap hg-topbar-inner">
+          <span>🚚 Curadoria para todo o Brasil</span>
+          <span>✓ Produtos selecionados</span>
+          <span>♢ Transparência em afiliados</span>
+          <b>Mais praticidade para a sua casa.</b>
+        </div>
+      </div>
+      <header className="hg-header">
       <div className="hg-wrap hg-nav">
         <a className="hg-logo-link" href="/" aria-label="HIPERGIGA">
           <img src="/hipergiga-logo.svg" alt="HIPERGIGA"/>
@@ -47,6 +56,7 @@ function Header(){
         </div>
       </div>
     </header>
+    </>
   )
 }
 
